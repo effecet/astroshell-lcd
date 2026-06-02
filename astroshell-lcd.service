@@ -1,0 +1,16 @@
+[Unit]
+Description=Astroshell LCD Stats Daemon
+After=network.target
+
+[Service]
+Type=simple
+# Replace with the user and install path on your system.
+User=youruser
+ExecStart=/opt/astroshell/.venv/bin/python -m astroshell.main run --layout grid
+WorkingDirectory=/opt/astroshell
+Restart=always
+RestartSec=5
+Nice=-5
+
+[Install]
+WantedBy=multi-user.target

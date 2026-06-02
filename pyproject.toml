@@ -1,0 +1,34 @@
+[project]
+name = "astroshell-lcd"
+version = "0.1.0"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "typer",
+    "rich",
+    "pyserial",
+    "pillow",
+    "psutil",
+    "pynvml",
+    "pydantic-settings",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "mypy"]
+
+[project.scripts]
+astroshell = "astroshell.main:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Project is named "astroshell-lcd" but the importable package is "astroshell";
+# tell hatchling explicitly so the wheel build doesn't fail on name mismatch.
+[tool.hatch.build.targets.wheel]
+packages = ["astroshell"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

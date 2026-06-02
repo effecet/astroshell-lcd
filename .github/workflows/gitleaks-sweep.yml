@@ -1,0 +1,25 @@
+name: gitleaks-sweep
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 3 * * 1"  # weekly full-history sweep, Mondays 03:00 UTC
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+
+      - name: Scan for secrets
+        run: |
+          CONFIG_ARGS=""
+          [ -f .gitleaks.toml ] && CONFIG_ARGS="--config .gitleaks.toml"
+          gitleaks detect $CONFIG_ARGS --source . --redact --exit-code 1 --verbose
