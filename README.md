@@ -118,10 +118,13 @@ astroshell-lcd/
 │   └── usb/
 │       ├── device.py        ← serial port open/close + auto-detect
 │       └── protocol.py      ← cracked protocol: build_command, init, push, keepalive
-├── tools/
+├── tools/                   ← dev/debug scripts (not needed for normal use)
 │   ├── show_info.py         ← display device info on LCD
-│   ├── probe_real.py        ← protocol verification
-│   └── sim_display.py       ← render to PNG (no hardware)
+│   ├── sim_display.py       ← render to PNG (no hardware)
+│   ├── push_frame.py        ← push a single frame to the device
+│   └── probe_*.py           ← 8 protocol-reverse-engineering probes
+│                              (real, raw, handshake, protocol, image,
+│                               v2, h264, h264_serial)
 ├── astroshell_portable.py   ← single-file portable version
 ├── astroshell-lcd.service   ← systemd unit file
 ├── config.yaml
