@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: "0 3 * * 1"  # weekly full-history sweep, Mondays 03:00 UTC
 
+permissions:
+  contents: read
+
 jobs:
   gitleaks:
     runs-on: ubuntu-latest
