@@ -1,5 +1,5 @@
 """
-Astroshell LCD serial protocol — cracked from Jungle Leopard Display Setup 1.0.42.
+Astroshell LCD serial protocol — reverse-engineered from Jungle Leopard Display Setup 1.0.42.
 
 Packet format:
     55 AA [len_lo len_hi] [cmd] [payload...] [checksum_lo checksum_hi]
@@ -10,7 +10,7 @@ Image streaming:
     3. Send getDeviceInfo (cmd 6)
     4. Send startLive (cmd 17)
     5. Write raw JPEG bytes to serial (no framing)
-    6. Re-send cmd 17 every 1.5s as keepalive
+    6. Re-send cmd 17 every 0.8s as keepalive (device times out at ~1.5s)
 """
 
 import io
