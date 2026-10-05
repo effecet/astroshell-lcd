@@ -3,7 +3,7 @@
 [![ci](https://github.com/effecet/astroshell-lcd/actions/workflows/ci.yml/badge.svg)](https://github.com/effecet/astroshell-lcd/actions/workflows/ci.yml)
 [![gitleaks-sweep](https://github.com/effecet/astroshell-lcd/actions/workflows/gitleaks-sweep.yml/badge.svg)](https://github.com/effecet/astroshell-lcd/actions/workflows/gitleaks-sweep.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue)](#license)
-[![python](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![python](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-Linux-E95420?logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 [![systemd](https://img.shields.io/badge/systemd-service-FCC624?logo=linux&logoColor=black)](./astroshell-lcd.service)
 [![pyserial](https://img.shields.io/badge/USB-pyserial-5C3EE8)](https://pyserial.readthedocs.io/)
@@ -46,7 +46,7 @@ See [docs](docs/) for detailed diagrams: [architecture](docs/architecture.md), [
 | Device | HONGTAI MONITOR (`33c3:7792`) |
 | Transport | CDC ACM serial → `/dev/ttyACM0` |
 | Screen | 320×240 px, 2.8" IPS, ST7789S |
-| Protocol | Cracked from Jungle Leopard app (`55 AA` magic) |
+| Protocol | Reverse-engineered from the Jungle Leopard app (`55 AA` magic) |
 | Baud | 115200 / 8N1 |
 
 ## Status
@@ -55,7 +55,7 @@ See [docs](docs/) for detailed diagrams: [architecture](docs/architecture.md), [
 |---|---|
 | USB device detection | ✅ confirmed |
 | Serial transport | ✅ CDC ACM, pyserial |
-| Protocol | ✅ fully cracked — `55 AA` + len + cmd + checksum |
+| Protocol | ✅ fully mapped — `55 AA` + len + cmd + checksum |
 | Device info | ✅ JSON via cmd 6 (320x240, ST7789S, v3.1) |
 | Stats collection | ✅ CPU, GPU, RAM, disk, network, power, voltages |
 | Frame rendering | ✅ 4 layouts × 3 themes, Pillow-based |
@@ -79,11 +79,13 @@ See [docs](docs/) for detailed diagrams: [architecture](docs/architecture.md), [
 
 ## Quick Start
 
+Needs Python 3.11+ (Ubuntu 24.04 ships 3.12; on 22.04 install a newer Python first).
+
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install typer rich pyserial pillow psutil pynvml pydantic-settings pyyaml
+pip install -e .
 
-# Grant serial port access (once, then re-login)
+# Grant serial port access (once, then log out and back in) — no root needed after this
 sudo usermod -aG dialout $USER
 
 # Preview layouts (no hardware needed)
@@ -93,9 +95,13 @@ python tools/sim_display.py --layout gaming
 python tools/sim_display.py --layout minimal
 
 # Run live on LCD
-sudo .venv/bin/python -m astroshell.main run --layout grid
+python -m astroshell.main run --layout grid
 
 # Install as systemd service (auto-start on boot)
+# Note: CPU power comes from the RAPL energy counter, which many kernels make
+# root-readable only; if so, the power tile shows 0 W when not running as root.
+# Edit User=, WorkingDirectory= and ExecStart= in the unit file to match your
+# username and install path first — the shipped values are placeholders.
 sudo cp astroshell-lcd.service /etc/systemd/system/
 sudo systemctl daemon-reload && sudo systemctl enable --now astroshell-lcd
 ```
@@ -112,12 +118,12 @@ astroshell-lcd/
 │   ├── stats/
 │   │   └── collector.py     ← hardware stats → StatsSnapshot (RAPL, pynvml, hwmon)
 │   ├── renderer/
-│   │   ├── frame.py         ← 320×240 PIL image composer (grid, mining, gaming, minimal)
+│   │   ├── frame.py         ← PIL image composer (grid, mining, gaming, minimal)
 │   │   ├── themes.py        ← color palettes
 │   │   └── widgets.py       ← bars, text, dividers
 │   └── usb/
 │       ├── device.py        ← serial port open/close + auto-detect
-│       └── protocol.py      ← cracked protocol: build_command, init, push, keepalive
+│       └── protocol.py      ← serial protocol: build_command, init, push, keepalive
 ├── tools/                   ← dev/debug scripts (not needed for normal use)
 │   ├── show_info.py         ← display device info on LCD
 │   ├── sim_display.py       ← render to PNG (no hardware)
@@ -131,7 +137,7 @@ astroshell-lcd/
 └── pyproject.toml
 ```
 
-## Protocol (CRACKED)
+## Protocol
 
 Packet format:
 ```
@@ -150,14 +156,15 @@ Commands:
 | 33  | close (fw >= 3.1) |
 
 Image streaming:
-1. Send `FF D9 FF D9` (stop current display)
+1. Send `FF D9 FF D9` (stop current display), then wait ~200 ms
 2. `getDeviceInfo` (cmd 6) — returns device JSON
 3. `startLive` (cmd 17)
 4. Stream raw JPEG frames (no framing, just bytes)
 5. Re-send cmd 17 every ~0.8s as keepalive (dedicated thread, device times out at ~1.5s)
 
-Reverse-engineered from `Jungle Leopard Display Setup 1.0.42` (Electron app).
-Publisher: Guangzhou Haiji Intelligent Technology Co., Ltd (gz-haiji.com)
+Reverse-engineered for interoperability from the vendor's `Jungle Leopard Display Setup 1.0.42`
+(Electron app, published by Guangzhou Haiji Intelligent Technology Co., Ltd), so the screen
+can be driven from Linux.
 
 ## Tech Stack
 

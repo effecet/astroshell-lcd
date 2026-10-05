@@ -1,5 +1,8 @@
 # Protocol Discovery Flow
 
+How the LCD protocol was worked out, from first probes to the working stream.
+The final protocol is summarised in the [README](../README.md#protocol).
+
 ```mermaid
 flowchart TD
     START(["Device detected<br/>33c3:7792 HONGTAI MONITOR"]) --> TRANSPORT
@@ -15,16 +18,19 @@ flowchart TD
     HIT --> INSIGHT["Key insight:<br/>Device needs MAGIC prefix<br/>before coordinate commands<br/>Bare commands ignored"]
 
     INSIGHT --> PUSH["push_frame.py<br/>55 AA + BITMAP_CMD + image"]
-    PUSH -->|"Got ack but<br/>no display change"| CURRENT
+    PUSH -->|"Got ack but<br/>no display change"| STUCK
 
-    CURRENT["Current state:<br/>Handshake works<br/>Image encoding TBD"]
+    STUCK["Handshake works,<br/>image encoding unknown"]
+    STUCK --> APP["Read the vendor app<br/>Jungle Leopard Display Setup 1.0.42<br/>(Electron, JS source)"]
 
-    CURRENT --> NEXT1["probe_handshake.py<br/>256 opcode scan<br/>find init sequence"]
-    CURRENT --> NEXT2["Try command+data<br/>sequencing after ack"]
-    CURRENT --> NEXT3["usbmon capture<br/>raw USB packet analysis"]
+    APP --> FORMAT["Packet format mapped<br/>55 AA + len + cmd + payload<br/>+ 16-bit LE checksum"]
+    FORMAT --> FLOW["Streaming flow found<br/>FF D9 FF D9 stop, cmd 6 info,<br/>cmd 17 startLive, then raw JPEG"]
+    FLOW --> KEEP["Device drops live mode after ~1.5s<br/>so cmd 17 is re-sent every 0.8s<br/>from a keepalive thread"]
+    KEEP --> DONE(["Working: live frames on the LCD<br/>implemented in astroshell/usb/protocol.py"])
 
     style START fill:#22d3ee,stroke:#22d3ee,color:#0d0d0d
     style HIT fill:#22c55e,stroke:#22c55e,color:#0d0d0d
-    style CURRENT fill:#f97316,stroke:#f97316,color:#0d0d0d
+    style STUCK fill:#525252,stroke:#525252,color:#e5e5e5
+    style DONE fill:#f97316,stroke:#f97316,color:#0d0d0d
     style FAIL1 fill:#525252,stroke:#525252,color:#e5e5e5
 ```

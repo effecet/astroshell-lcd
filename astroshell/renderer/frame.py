@@ -1,5 +1,8 @@
 """
-Frame renderer — composes a 320×320 PIL Image from a StatsSnapshot.
+Frame renderer — composes a PIL Image from a StatsSnapshot.
+
+The grid layout renders at 320×240; the others render at 320×320 and are
+resized to the panel's 320×240 when encoded for push.
 """
 
 from PIL import Image, ImageDraw

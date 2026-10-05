@@ -293,7 +293,7 @@ def main():
 
     hits = [r for r in results if "RESPONSE" in r[1]]
     if hits:
-        console.print(f"\n[bold green]Found {len(hits)} response(s)! Protocol may be cracked.[/]")
+        console.print(f"\n[bold green]Found {len(hits)} response(s)! Protocol may be identified.[/]")
     else:
         console.print(
             "\n[yellow]No responses. Next step: usbmon + Wireshark on Linux to sniff USB packets.[/]"

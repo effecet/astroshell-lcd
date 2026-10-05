@@ -18,7 +18,7 @@ dependencies = [
 dev = ["pytest", "ruff", "mypy"]
 
 [project.scripts]
-astroshell = "astroshell.main:app"
+astroshell = "astroshell.main:cli"
 
 [build-system]
 requires = ["hatchling"]
