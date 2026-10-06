@@ -41,10 +41,22 @@ class StatsSnapshot:
 
 
 RAPL_ENERGY_PATH = "/sys/class/powercap/intel-rapl:0/energy_uj"
+RAPL_RANGE_PATH = "/sys/class/powercap/intel-rapl:0/max_energy_range_uj"
+HWMON_DIR = Path("/sys/class/hwmon")
 HWMON_AMDGPU = None
 
-# Find amdgpu hwmon path at import time
-for _d in Path("/sys/class/hwmon").iterdir():
+
+def rapl_delta(prev_uj: int, cur_uj: int, max_range_uj: int) -> int:
+    """Energy used between two RAPL readings. The counter wraps at
+    max_energy_range_uj (CPU-specific), not at 2**32."""
+    if max_range_uj <= 0:
+        max_range_uj = 2**32
+    delta = cur_uj - prev_uj
+    return delta + max_range_uj if delta < 0 else delta
+
+
+# Find amdgpu hwmon path at import time (absent off Linux, e.g. sim on a Mac)
+for _d in HWMON_DIR.iterdir() if HWMON_DIR.is_dir() else ():
     try:
         if (_d / "name").read_text().strip() == "amdgpu":
             HWMON_AMDGPU = _d
@@ -61,9 +73,10 @@ class StatsCollector:
         self._last_net_sent = 0
         self._last_net_recv = 0
         self._last_net_time = time.time()
-        self._last_energy_uj: int = 0
+        self._last_energy_uj: int | None = None  # no baseline until a good read
         self._last_energy_time: float = time.time()
         self._rapl_available = Path(RAPL_ENERGY_PATH).exists()
+        self._rapl_range_uj = self._read_rapl_range_uj()
         if self._rapl_available:
             self._last_energy_uj = self._read_energy_uj()
             self._last_energy_time = time.time()
@@ -156,19 +169,32 @@ class StatsCollector:
         except Exception:
             return 0.0, 0.0
 
-    def _read_energy_uj(self) -> int:
+    @staticmethod
+    def _read_rapl_range_uj() -> int:
+        try:
+            value = int(Path(RAPL_RANGE_PATH).read_text().strip())
+        except Exception:
+            value = 0
+        # Unknown or nonsense range: fall back to the old assumption.
+        return value if value > 0 else 2**32
+
+    def _read_energy_uj(self) -> int | None:
         try:
             return int(Path(RAPL_ENERGY_PATH).read_text().strip())
         except Exception:
-            return 0
+            return None
 
     def _read_cpu_power(self) -> float:
         now = time.time()
         energy = self._read_energy_uj()
+        if energy is None:
+            # A failed read is not a counter wrap: skip it and keep the last baseline.
+            return 0.0
+        if self._last_energy_uj is None:
+            self._last_energy_uj, self._last_energy_time = energy, now
+            return 0.0
         dt = max(now - self._last_energy_time, 0.001)
-        delta = energy - self._last_energy_uj
-        if delta < 0:
-            delta += 2**32  # counter wrapped
+        delta = rapl_delta(self._last_energy_uj, energy, self._rapl_range_uj)
         self._last_energy_uj = energy
         self._last_energy_time = now
         return delta / 1e6 / dt  # µJ → W

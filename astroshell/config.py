@@ -14,7 +14,7 @@ class DisplayConfig:
     baud: int = 115200
     width: int = 320
     height: int = 240
-    refresh_interval: float = 1.0
+    refresh_interval: float = 2.0
     theme: str = "effece"
     layout: str = "grid"
     simulate: bool = False
@@ -41,6 +41,41 @@ class AppConfig:
     display: DisplayConfig = field(default_factory=DisplayConfig)
     stats: StatsConfig = field(default_factory=StatsConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
+
+
+def apply_overrides(
+    cfg: AppConfig,
+    *,
+    layout: str | None = None,
+    theme: str | None = None,
+    refresh_interval: float | None = None,
+) -> AppConfig:
+    """Apply CLI flags on top of config.yaml, in place, then validate.
+
+    A flag left unset keeps the file's value.
+    """
+    if layout is not None:
+        cfg.display.layout = layout
+    if theme is not None:
+        cfg.display.theme = theme
+    if refresh_interval is not None:
+        cfg.display.refresh_interval = refresh_interval
+    validate(cfg)
+    return cfg
+
+
+def validate(cfg: AppConfig) -> None:
+    """Reject values that would crash or busy-loop the daemon."""
+    try:
+        cfg.display.refresh_interval = float(cfg.display.refresh_interval)
+    except (TypeError, ValueError):
+        raise ValueError(
+            f"refresh_interval must be a number, got {cfg.display.refresh_interval!r}"
+        ) from None
+    if cfg.display.refresh_interval <= 0:
+        raise ValueError(
+            f"refresh_interval must be greater than 0, got {cfg.display.refresh_interval}"
+        )
 
 
 def load_config(path: str = "config.yaml") -> AppConfig:

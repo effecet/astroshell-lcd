@@ -3,7 +3,7 @@ display:
   baud: 115200
   width: 320
   height: 240
-  refresh_interval: 1.0
+  refresh_interval: 2.0
   theme: effece
   layout: grid
   simulate: false          # true = write screencap.png instead of USB
