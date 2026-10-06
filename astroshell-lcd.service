@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 # Replace with the user and install path on your system.
 User=youruser
-ExecStart=/opt/astroshell/.venv/bin/python -m astroshell.main run --layout grid
+ExecStart=/opt/astroshell/.venv/bin/python -m astroshell.main run
 WorkingDirectory=/opt/astroshell
 Restart=always
 RestartSec=5

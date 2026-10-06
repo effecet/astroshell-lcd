@@ -16,14 +16,14 @@ sequenceDiagram
 
     par Every 0.8s
         K->>D: startLive (cmd 17) keepalive
-    and Every refresh interval (run --interval, 2s default)
+    and Every refresh_interval (config.yaml, 2s; --interval overrides)
         S->>S: Read CPU (psutil + hwmon, RAPL power)
         S->>S: Read GPU (pynvml)
         S->>S: Read RAM, disk, network, voltages
         S->>R: StatsSnapshot
 
-        R->>R: Apply theme (default: effece)
-        R->>R: Apply layout (default: grid)
+        R->>R: Apply theme (config.yaml: effece)
+        R->>R: Apply layout (config.yaml: grid)
         R->>R: Compose PIL Image (320×240 grid, 320×320 others)
         R->>P: PIL Image
 

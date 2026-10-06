@@ -95,7 +95,7 @@ python tools/sim_display.py --layout gaming
 python tools/sim_display.py --layout minimal
 
 # Run live on LCD
-python -m astroshell.main run --layout grid
+python -m astroshell.main run   # layout, theme and refresh_interval come from config.yaml
 
 # Install as systemd service (auto-start on boot)
 # Note: CPU power comes from the RAPL energy counter, which many kernels make
@@ -113,7 +113,7 @@ astroshell-lcd/
 ├── astroshell/
 │   ├── main.py              ← typer CLI entrypoint
 │   ├── daemon.py            ← collect → render → push loop + threaded keepalive
-│   ├── config.py            ← pydantic config from config.yaml
+│   ├── config.py            ← dataclass config from config.yaml (+ CLI overrides)
 │   ├── logger.py            ← rich logging
 │   ├── stats/
 │   │   └── collector.py     ← hardware stats → StatsSnapshot (RAPL, pynvml, hwmon)
@@ -131,6 +131,7 @@ astroshell-lcd/
 │   └── probe_*.py           ← 8 protocol-reverse-engineering probes
 │                              (real, raw, handshake, protocol, image,
 │                               v2, h264, h264_serial)
+├── tests/                   ← pytest: config overrides, CLI, RAPL counter
 ├── astroshell_portable.py   ← single-file portable version
 ├── astroshell-lcd.service   ← systemd unit file
 ├── config.yaml

@@ -6,27 +6,31 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-app = Console()
 cli = typer.Typer(name="astroshell", help="Astroshell LCD stats daemon — crafted by effece 🧉")
 console = Console()
 
 
 @cli.command()
 def run(
-    layout: str = typer.Option("grid", help="Layout: grid | mining | gaming | minimal"),
-    theme: str = typer.Option("effece", help="Theme: effece | dark_green | matrix"),
-    interval: float = typer.Option(2.0, help="Refresh interval in seconds"),
+    layout: str | None = typer.Option(
+        None, help="Layout: grid | mining | gaming | minimal  [default: from config.yaml]"
+    ),
+    theme: str | None = typer.Option(
+        None, help="Theme: effece | dark_green | matrix  [default: from config.yaml]"
+    ),
+    interval: float | None = typer.Option(
+        None, help="Refresh interval in seconds  [default: from config.yaml]"
+    ),
     config: str = typer.Option("config.yaml", help="Path to config file"),
     sim: bool = typer.Option(False, "--sim", help="Simulate (write screencap.png)"),
 ):
     """Start the live stats daemon and push frames to the Astroshell LCD."""
-    from astroshell.config import load_config
+    from astroshell.config import apply_overrides, load_config
     from astroshell import daemon
 
-    cfg = load_config(config)
-    cfg.display.layout = layout
-    cfg.display.theme = theme
-    cfg.display.refresh_interval = interval
+    cfg = apply_overrides(
+        load_config(config), layout=layout, theme=theme, refresh_interval=interval
+    )
     if sim:
         cfg.display.simulate = True
 
@@ -119,22 +123,23 @@ def stats():
 
 @cli.command()
 def sim(
-    layout: str = typer.Option("mining", help="Layout to preview"),
-    theme: str = typer.Option("effece", help="Theme to preview"),
-    interval: float = typer.Option(2.0, help="Refresh interval"),
+    layout: str | None = typer.Option(None, help="Layout to preview  [default: from config.yaml]"),
+    theme: str | None = typer.Option(None, help="Theme to preview  [default: from config.yaml]"),
+    interval: float | None = typer.Option(
+        None, help="Refresh interval  [default: from config.yaml]"
+    ),
     out: str = typer.Option("screencap.png", help="Output file"),
 ):
     """Simulate display — renders frames to screencap.png without hardware."""
-    from astroshell.config import load_config
+    from astroshell.config import apply_overrides, load_config
     from astroshell import daemon
 
-    cfg = load_config()
-    cfg.display.layout = layout
-    cfg.display.theme = theme
-    cfg.display.refresh_interval = interval
+    cfg = apply_overrides(load_config(), layout=layout, theme=theme, refresh_interval=interval)
     cfg.display.simulate = True
 
-    console.print(f"[bold]SIM MODE[/] — writing [cyan]{out}[/] every {interval}s")
+    console.print(
+        f"[bold]SIM MODE[/] — writing [cyan]{out}[/] every {cfg.display.refresh_interval}s"
+    )
     console.print("Open screencap.png in an image viewer with auto-refresh to preview live.\n")
     daemon.run(cfg)
 
